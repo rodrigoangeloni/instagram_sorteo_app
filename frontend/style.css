@@ -1,0 +1,62 @@
+body {
+  font-family: Arial, sans-serif; /* Fuente más común */
+  padding: 20px;
+  background-color: #f4f4f4; /* Un fondo suave */
+  color: #333; /* Color de texto principal */
+  display: flex; /* Para centrar contenido */
+  flex-direction: column; /* Apilar elementos verticalmente */
+  align-items: center; /* Centrar horizontalmente */
+  min-height: 100vh; /* Asegurar que el cuerpo ocupe al menos toda la altura de la ventana */
+  margin: 0; /* Quitar margen por defecto del body */
+}
+
+h1 {
+  color: #2c3e50; /* Un color más oscuro para el título */
+}
+
+button {
+  background-color: #3498db; /* Color azul para botones */
+  color: white;
+  border: none;
+  padding: 10px 20px; /* Más padding */
+  margin: 10px;
+  border-radius: 5px; /* Bordes redondeados */
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Transición suave */
+}
+
+button:hover {
+  background-color: #2980b9; /* Color más oscuro al pasar el mouse */
+}
+
+#mediaList {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap; /* Permitir que los elementos se envuelvan */
+  justify-content: center; /* Centrar los posts */
+  gap: 15px; /* Espacio entre posts */
+}
+
+/* Estilo para los botones de los posts individuales */
+#mediaList button {
+  background-color: #ecf0f1; /* Un color de fondo diferente para los posts */
+  color: #34495e; /* Color de texto para los posts */
+  min-width: 200px; /* Ancho mínimo para cada post */
+  border: 1px solid #bdc3c7;
+}
+
+#mediaList button:hover {
+  background-color: #dadedf;
+}
+
+/* Contenedor para el resultado del sorteo */
+#winnerDisplay {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e8f6f3;
+  border: 1px solid #a3e4d7;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 1.2em;
+  color: #1abc9c;
+}

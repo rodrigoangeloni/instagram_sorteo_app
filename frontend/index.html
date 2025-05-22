@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Para responsividad -->
+  <title>Sorteo Instagram</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Sorteo de Instagram</h1>
+  </header>
+
+  <main>
+    <button id="loginButton" onclick="window.location='/login'">Conectar con Instagram</button>
+    
+    <section id="mediaSection" style="display: none;">
+      <h2>Tus Publicaciones</h2>
+      <div id="mediaList"></div>
+    </section>
+
+    <section id="winnerSection" style="display: none;">
+      <h2>¡Ganador!</h2>
+      <div id="winnerDisplay"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Aplicación de Sorteos de Instagram</p>
+  </footer>
+
+  <script>
+    const loginButton = document.getElementById('loginButton');
+    const mediaSection = document.getElementById('mediaSection');
+    const mediaListDiv = document.getElementById('mediaList');
+    const winnerSection = document.getElementById('winnerSection');
+    const winnerDisplayDiv = document.getElementById('winnerDisplay');
+
+    async function checkLoginStatus() {
+      try {
+        const res = await fetch('/media');
+        if (res.ok) {
+          loginButton.style.display = 'none';
+          mediaSection.style.display = 'block';
+          cargarPosts();
+        } else {
+          // No está logueado o hay un error, mostrar botón de login
+          loginButton.style.display = 'block';
+          mediaSection.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error al verificar el estado del login:', error);
+        loginButton.style.display = 'block';
+        mediaSection.style.display = 'none';
+      }
+    }
+
+    async function cargarPosts() {
+      try {
+        const res = await fetch('/media');
+        if (!res.ok) {
+          // Si falla la carga de posts (ej. token expirado), mostrar login
+          alert('Error al cargar las publicaciones. Por favor, vuelve a conectar con Instagram.');
+          loginButton.style.display = 'block';
+          mediaSection.style.display = 'none';
+          winnerSection.style.display = 'none';
+          return;
+        }
+        const json = await res.json();
+        mediaListDiv.innerHTML = ''; // Limpiar lista anterior
+        if (json.data && json.data.length > 0) {
+          json.data.forEach(post => {
+            const btn = document.createElement('button');
+            // Intenta mostrar una miniatura si está disponible (requiere más lógica y permisos de API)
+            // Por ahora, solo texto
+            let postText = post.caption ? post.caption.substring(0, 50) + '...' : post.id;
+            if (post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM') {
+              postText = `🖼️ ${postText}`;
+            } else if (post.media_type === 'VIDEO') {
+              postText = `📹 ${postText}`;
+            }
+            btn.textContent = postText;
+            btn.title = post.caption || post.id; // Tooltip con caption completo
+            btn.onclick = () => cargarComentarios(post.id);
+            mediaListDiv.appendChild(btn);
+          });
+        } else {
+          mediaListDiv.textContent = 'No se encontraron publicaciones.';
+        }
+      } catch (error) {
+        console.error('Error al cargar posts:', error);
+        mediaListDiv.textContent = 'Error al cargar las publicaciones.';
+      }
+    }
+
+    async function cargarComentarios(id) {
+      try {
+        winnerDisplayDiv.textContent = 'Obteniendo comentarios y seleccionando ganador...';
+        winnerSection.style.display = 'block';
+        mediaSection.style.display = 'none'; // Ocultar sección de posts
+
+        const res = await fetch(`/comments/${id}`);
+        if (!res.ok) {
+          throw new Error(`Error del servidor: ${res.status}`);
+        }
+        const json = await res.json();
+        
+        if (json.data && json.data.length > 0) {
+          const participantes = json.data.map(c => c.username);
+          // Eliminar duplicados para que un usuario no tenga más chances por comentar varias veces
+          const participantesUnicos = [...new Set(participantes)];
+          const ganador = participantesUnicos[Math.floor(Math.random() * participantesUnicos.length)];
+          winnerDisplayDiv.innerHTML = `El ganador es: <strong>${ganador}</strong>🎉<br><button onclick="resetSorteo()">Realizar otro sorteo</button>`;
+        } else {
+          winnerDisplayDiv.textContent = 'No hay comentarios en esta publicación para sortear.';
+        }
+      } catch (error) {
+        console.error('Error al cargar comentarios o seleccionar ganador:', error);
+        winnerDisplayDiv.textContent = `Error al procesar el sorteo: ${error.message}. Intenta de nuevo.`;
+      }
+    }
+
+    function resetSorteo() {
+      winnerSection.style.display = 'none';
+      mediaSection.style.display = 'block';
+      cargarPosts(); // Recargar posts por si hay nuevos o el usuario quiere elegir otro
+    }
+
+    // Comprobar el estado del login al cargar la página
+    document.addEventListener('DOMContentLoaded', checkLoginStatus);
+  </script>
+</body>
+</html>

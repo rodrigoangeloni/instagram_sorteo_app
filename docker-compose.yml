@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  instagram-sorteo:
+    container_name: instagram-sorteo
+    build:
+      context: ./backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./frontend:/app/frontend
+    restart: unless-stopped
