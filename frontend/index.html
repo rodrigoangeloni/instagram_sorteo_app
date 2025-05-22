@@ -2,35 +2,47 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Para responsividad -->
-  <title>Sorteo Instagram</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorteo Instagram Mágico ✨</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header>
-    <h1>Sorteo de Instagram</h1>
-  </header>
+  <div class="container">
+    <header>
+      <h1>Sorteo de Instagram</h1>
+    </header>
 
-  <main>
-    <button id="loginButton" onclick="window.location='/login'">Conectar con Instagram</button>
-    
-    <section id="mediaSection" style="display: none;">
-      <h2>Tus Publicaciones</h2>
-      <div id="mediaList"></div>
-    </section>
+    <main>
+      <div id="userInfo" style="display: none; margin-bottom: 20px; text-align: center;">
+        <img id="userProfilePic" src="" alt="Profile Pic" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">
+        <span id="usernameDisplay" style="font-weight: bold;"></span>
+        <button id="logoutButton" style="margin-left: 20px;">Desconectar</button>
+      </div>
+      <button id="loginButton" onclick="window.location='/login'">Conectar con Instagram</button>
+      
+      <section id="mediaSection" style="display: none;">
+        <h2>Elige tu Publicación para el Sorteo</h2>
+        <div id="mediaList"></div>
+      </section>
 
-    <section id="winnerSection" style="display: none;">
-      <h2>¡Ganador!</h2>
-      <div id="winnerDisplay"></div>
-    </section>
-  </main>
+      <section id="winnerSection" style="display: none;">
+        <h2>¡Tenemos un Ganador! 🥳</h2>
+        <div id="winnerDisplay">Cargando ganador...</div>
+      </section>
+    </main>
+  </div>
 
   <footer>
-    <p>Aplicación de Sorteos de Instagram</p>
+    <p>&copy; 2025 Aplicación de Sorteos Mágicos. Todos los derechos reservados.</p>
   </footer>
 
   <script>
     const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const userInfoDiv = document.getElementById('userInfo');
+    const userProfilePicImg = document.getElementById('userProfilePic');
+    const usernameDisplaySpan = document.getElementById('usernameDisplay');
     const mediaSection = document.getElementById('mediaSection');
     const mediaListDiv = document.getElementById('mediaList');
     const winnerSection = document.getElementById('winnerSection');
@@ -38,95 +50,153 @@
 
     async function checkLoginStatus() {
       try {
-        const res = await fetch('/media');
-        if (res.ok) {
+        const res = await fetch('/api/user'); // Updated endpoint
+        const user = await res.json();
+
+        if (user.isLoggedIn && user.igUsername) {
           loginButton.style.display = 'none';
+          userInfoDiv.style.display = 'block';
+          userProfilePicImg.src = user.igProfilePictureUrl || 'placeholder.png'; // Add a placeholder if no pic
+          usernameDisplaySpan.textContent = user.igUsername;
+          logoutButton.style.display = 'inline-block';
           mediaSection.style.display = 'block';
-          cargarPosts();
+          winnerSection.style.display = 'none';
+          loadUserMedia();
         } else {
-          // No está logueado o hay un error, mostrar botón de login
           loginButton.style.display = 'block';
+          userInfoDiv.style.display = 'none';
+          logoutButton.style.display = 'none';
           mediaSection.style.display = 'none';
+          winnerSection.style.display = 'none';
+          // Display any error messages from query params if present (e.g., after a failed auth redirect)
+          const urlParams = new URLSearchParams(window.location.search);
+          const error = urlParams.get('error');
+          if (error) {
+            mediaListDiv.innerHTML = `<p class="error-message">Error de autenticación: ${decodeURIComponent(error)}</p>`;
+            mediaSection.style.display = 'block'; // Show section to display error
+          }
         }
       } catch (error) {
         console.error('Error al verificar el estado del login:', error);
         loginButton.style.display = 'block';
+        userInfoDiv.style.display = 'none';
+        logoutButton.style.display = 'none';
         mediaSection.style.display = 'none';
+        winnerSection.style.display = 'none';
+        mediaListDiv.innerHTML = '<p class="error-message">No se pudo conectar con el servidor. Inténtalo más tarde.</p>';
+        mediaSection.style.display = 'block';
       }
     }
 
-    async function cargarPosts() {
+    logoutButton.onclick = () => {
+      window.location.href = '/logout';
+    };
+
+    async function loadUserMedia() {
       try {
-        const res = await fetch('/media');
+        const res = await fetch('/api/media'); // Updated endpoint
         if (!res.ok) {
-          // Si falla la carga de posts (ej. token expirado), mostrar login
-          alert('Error al cargar las publicaciones. Por favor, vuelve a conectar con Instagram.');
-          loginButton.style.display = 'block';
-          mediaSection.style.display = 'none';
+          const errorText = await res.text();
+          mediaListDiv.innerHTML = `<p class="error-message">Error al cargar las publicaciones: ${errorText}. Intenta <a href="/login">reconectar con Instagram</a>.</p>`;
+          // Potentially logout or guide user if token is invalid
+          if (res.status === 401) { // Unauthorized
+            loginButton.style.display = 'block';
+            userInfoDiv.style.display = 'none';
+            logoutButton.style.display = 'none';
+            mediaSection.style.display = 'none'; // Hide media section as well
+             winnerSection.style.display = 'none';
+          } else {
+            mediaSection.style.display = 'block'; // Keep section visible for the error message
+          }
           winnerSection.style.display = 'none';
           return;
         }
         const json = await res.json();
-        mediaListDiv.innerHTML = ''; // Limpiar lista anterior
+        mediaListDiv.innerHTML = ''; 
         if (json.data && json.data.length > 0) {
           json.data.forEach(post => {
             const btn = document.createElement('button');
-            // Intenta mostrar una miniatura si está disponible (requiere más lógica y permisos de API)
-            // Por ahora, solo texto
-            let postText = post.caption ? post.caption.substring(0, 50) + '...' : post.id;
-            if (post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM') {
-              postText = `🖼️ ${postText}`;
-            } else if (post.media_type === 'VIDEO') {
-              postText = `📹 ${postText}`;
+            let postText = post.caption ? post.caption.substring(0, 70) + (post.caption.length > 70 ? '...' : '') : `Post ID: ${post.id}`;
+            
+            // Use thumbnail_url if available, otherwise media_url or a placeholder
+            let imageUrl = post.thumbnail_url || post.media_url;
+            if (post.media_type === 'VIDEO' && !post.thumbnail_url) {
+                // For videos, thumbnail_url is preferred. If not available, you might not have a direct image.
+                // media_url for VIDEO is the video file itself.
+                // Consider a generic video icon if no thumbnail.
             }
-            btn.textContent = postText;
-            btn.title = post.caption || post.id; // Tooltip con caption completo
-            btn.onclick = () => cargarComentarios(post.id);
+
+            let icon = '';
+            if (post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM') {
+              icon = '🖼️ ';
+            } else if (post.media_type === 'VIDEO') {
+              icon = '📹 ';
+            }
+            
+            // Displaying the image thumbnail
+            let imagePreview = '';
+            if (imageUrl && (post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM' || (post.media_type === 'VIDEO' && post.thumbnail_url))) {
+                imagePreview = `<img src="${imageUrl}" alt="thumbnail" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px; vertical-align: middle; border-radius: 4px;">`;
+            }
+
+            btn.innerHTML = `${imagePreview}${icon}${postText}`;
+            btn.title = post.caption || `Post ID: ${post.id}`;
+            btn.onclick = () => loadCommentsAndPickWinner(post.id);
             mediaListDiv.appendChild(btn);
           });
         } else {
-          mediaListDiv.textContent = 'No se encontraron publicaciones.';
+          mediaListDiv.innerHTML = '<p>No se encontraron publicaciones recientes. ¡Asegúrate de tener posts en tu cuenta de Instagram Profesional!</p>';
         }
       } catch (error) {
         console.error('Error al cargar posts:', error);
-        mediaListDiv.textContent = 'Error al cargar las publicaciones.';
+        mediaListDiv.innerHTML = '<p class="error-message">Error crítico al cargar las publicaciones. Revisa la consola para más detalles.</p>';
       }
     }
 
-    async function cargarComentarios(id) {
+    async function loadCommentsAndPickWinner(id) {
       try {
-        winnerDisplayDiv.textContent = 'Obteniendo comentarios y seleccionando ganador...';
+        winnerDisplayDiv.innerHTML = '<p>🔮 Seleccionando un ganador entre los comentarios... ¡Mucha suerte!</p>';
         winnerSection.style.display = 'block';
-        mediaSection.style.display = 'none'; // Ocultar sección de posts
+        mediaSection.style.display = 'none'; 
 
-        const res = await fetch(`/comments/${id}`);
+        const res = await fetch(`/api/comments/${id}`); // Updated endpoint
         if (!res.ok) {
-          throw new Error(`Error del servidor: ${res.status}`);
+          const errorText = await res.text();
+          throw new Error(`Error del servidor: ${res.status} - ${errorText}`);
         }
         const json = await res.json();
         
         if (json.data && json.data.length > 0) {
+          // Filter out comments from the post owner if post.username is available and matches comment.username
+          // const postOwnerUsername = ''; // This would ideally come from the media item if available
+          // const filteredComments = json.data.filter(c => c.username !== postOwnerUsername);
+          // For now, we use all commenters.
           const participantes = json.data.map(c => c.username);
-          // Eliminar duplicados para que un usuario no tenga más chances por comentar varias veces
           const participantesUnicos = [...new Set(participantes)];
-          const ganador = participantesUnicos[Math.floor(Math.random() * participantesUnicos.length)];
-          winnerDisplayDiv.innerHTML = `El ganador es: <strong>${ganador}</strong>🎉<br><button onclick="resetSorteo()">Realizar otro sorteo</button>`;
+          
+          if (participantesUnicos.length > 0) {
+            const ganador = participantesUnicos[Math.floor(Math.random() * participantesUnicos.length)];
+            winnerDisplayDiv.innerHTML = `<p>¡Felicidades! El ganador es:</p><strong>${ganador}</strong> 🎉<br><button onclick="resetSorteo()">Elegir otro post</button>`;
+          } else {
+            // This case might occur if all comments were from the post owner and filtered out.
+            winnerDisplayDiv.innerHTML = '<p>No hay comentarios válidos para el sorteo (ej. solo comentarios del autor).</p><br><button onclick="resetSorteo()">Elegir otro post</button>';
+          }
         } else {
-          winnerDisplayDiv.textContent = 'No hay comentarios en esta publicación para sortear.';
+          winnerDisplayDiv.innerHTML = '<p>Esta publicación no tiene comentarios aún. ¡Anima a tus seguidores a participar!</p><br><button onclick="resetSorteo()">Elegir otro post</button>';
         }
       } catch (error) {
         console.error('Error al cargar comentarios o seleccionar ganador:', error);
-        winnerDisplayDiv.textContent = `Error al procesar el sorteo: ${error.message}. Intenta de nuevo.`;
+        winnerDisplayDiv.innerHTML = `<p class="error-message">Oops. Hubo un problema al obtener los comentarios: ${error.message}.</p><button onclick="resetSorteo()">Intentar con otro post</button>`;
       }
     }
 
     function resetSorteo() {
       winnerSection.style.display = 'none';
       mediaSection.style.display = 'block';
-      cargarPosts(); // Recargar posts por si hay nuevos o el usuario quiere elegir otro
+      // Consider if loadUserMedia() should be called here to refresh the list
+      // loadUserMedia(); 
     }
 
-    // Comprobar el estado del login al cargar la página
     document.addEventListener('DOMContentLoaded', checkLoginStatus);
   </script>
 </body>
