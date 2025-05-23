@@ -1,203 +1,159 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sorteo Instagram Mágico ✨</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Instagram Sorteo App</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Sorteo de Instagram</h1>
-    </header>
+    <div class="container">
+        <header>
+            <h1>🎉 Instagram Sorteo App</h1>
+            <p>Realiza sorteos justos y automáticos en Instagram</p>
+        </header>
 
-    <main>
-      <div id="userInfo" style="display: none; margin-bottom: 20px; text-align: center;">
-        <img id="userProfilePic" src="" alt="Profile Pic" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; vertical-align: middle;">
-        <span id="usernameDisplay" style="font-weight: bold;"></span>
-        <button id="logoutButton" style="margin-left: 20px;">Desconectar</button>
-      </div>
-      <button id="loginButton" onclick="window.location='/login'">Conectar con Instagram</button>
-      
-      <section id="mediaSection" style="display: none;">
-        <h2>Elige tu Publicación para el Sorteo</h2>
-        <div id="mediaList"></div>
-      </section>
+        <main>
+            <!-- Estado de Login -->
+            <section id="login-section" class="section">
+                <div class="login-card">
+                    <h2>¡Bienvenido!</h2>
+                    <p>Conecta tu cuenta profesional de Instagram para comenzar a realizar sorteos automáticos.</p>
+                    <div style="margin: 30px 0;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">📱</div>
+                        <p><strong>Requisitos:</strong></p>
+                        <ul style="text-align: left; margin: 15px 0; padding-left: 20px;">
+                            <li>✅ Cuenta Profesional de Instagram (Empresa o Creador)</li>
+                            <li>🔗 Vinculada a una Página de Facebook</li>
+                            <li>👑 Permisos de administrador en la página</li>
+                        </ul>
+                    </div>
+                    <a href="/login" class="btn-primary">
+                        📱 Conectar con Instagram
+                    </a>
+                </div>
+            </section>
 
-      <section id="winnerSection" style="display: none;">
-        <h2>¡Tenemos un Ganador! 🥳</h2>
-        <div id="winnerDisplay">Cargando ganador...</div>
-      </section>
-    </main>
-  </div>
+            <!-- Estado de Usuario Logueado -->
+            <section id="user-section" class="section" style="display: none;">
+                <div class="sorteo-card">
+                    <!-- Info del usuario -->
+                    <div class="user-info">
+                        <img id="user-avatar" src="" alt="Avatar">
+                        <div class="user-details">
+                            <span id="user-name">@username</span>
+                            <a href="/logout" class="btn-secondary">Cerrar Sesión</a>
+                        </div>
+                    </div>
 
-  <footer>
-    <p>&copy; 2025 Aplicación de Sorteos Mágicos. Todos los derechos reservados.</p>
-  </footer>
+                    <h2>Realizar Sorteo</h2>
+                    <p>Simplemente pega la URL del post de Instagram y ¡listo!</p>
 
-  <script>
-    const loginButton = document.getElementById('loginButton');
-    const logoutButton = document.getElementById('logoutButton');
-    const userInfoDiv = document.getElementById('userInfo');
-    const userProfilePicImg = document.getElementById('userProfilePic');
-    const usernameDisplaySpan = document.getElementById('usernameDisplay');
-    const mediaSection = document.getElementById('mediaSection');
-    const mediaListDiv = document.getElementById('mediaList');
-    const winnerSection = document.getElementById('winnerSection');
-    const winnerDisplayDiv = document.getElementById('winnerDisplay');
+                    <form id="sorteo-form">
+                        <div class="input-group">
+                            <label for="post-url">URL del Post de Instagram:</label>
+                            <input 
+                                type="url" 
+                                id="post-url" 
+                                name="post-url" 
+                                placeholder="https://www.instagram.com/p/..."
+                                required
+                            >
+                            <small>Ejemplo: https://www.instagram.com/p/ABC123/</small>
+                        </div>
 
-    async function checkLoginStatus() {
-      try {
-        const res = await fetch('/api/user'); // Updated endpoint
-        const user = await res.json();
+                        <!-- Requisitos automáticos -->
+                        <div class="requirements">
+                            <h3>📋 Requisitos para participar:</h3>
+                            <ul>
+                                <li id="req-follow">✅ Seguir la cuenta <strong id="account-name">@tu_cuenta</strong></li>
+                                <li id="req-like">❤️ Dar like al post</li>
+                                <li id="req-comment">💬 Comentar en el post</li>
+                            </ul>
+                            <small style="color: #666; font-size: 0.9rem; margin-top: 10px; display: block;">
+                                Los requisitos se actualizan automáticamente con tu nombre de usuario.
+                            </small>
+                        </div>
 
-        if (user.isLoggedIn && user.igUsername) {
-          loginButton.style.display = 'none';
-          userInfoDiv.style.display = 'block';
-          userProfilePicImg.src = user.igProfilePictureUrl || 'placeholder.png'; // Add a placeholder if no pic
-          usernameDisplaySpan.textContent = user.igUsername;
-          logoutButton.style.display = 'inline-block';
-          mediaSection.style.display = 'block';
-          winnerSection.style.display = 'none';
-          loadUserMedia();
-        } else {
-          loginButton.style.display = 'block';
-          userInfoDiv.style.display = 'none';
-          logoutButton.style.display = 'none';
-          mediaSection.style.display = 'none';
-          winnerSection.style.display = 'none';
-          // Display any error messages from query params if present (e.g., after a failed auth redirect)
-          const urlParams = new URLSearchParams(window.location.search);
-          const error = urlParams.get('error');
-          if (error) {
-            mediaListDiv.innerHTML = `<p class="error-message">Error de autenticación: ${decodeURIComponent(error)}</p>`;
-            mediaSection.style.display = 'block'; // Show section to display error
-          }
-        }
-      } catch (error) {
-        console.error('Error al verificar el estado del login:', error);
-        loginButton.style.display = 'block';
-        userInfoDiv.style.display = 'none';
-        logoutButton.style.display = 'none';
-        mediaSection.style.display = 'none';
-        winnerSection.style.display = 'none';
-        mediaListDiv.innerHTML = '<p class="error-message">No se pudo conectar con el servidor. Inténtalo más tarde.</p>';
-        mediaSection.style.display = 'block';
-      }
-    }
+                        <button type="submit" class="btn-primary">
+                            🎯 Realizar Sorteo
+                        </button>
+                    </form>
+                </div>
+            </section>
 
-    logoutButton.onclick = () => {
-      window.location.href = '/logout';
-    };
+            <!-- Estado de Loading -->
+            <section id="loading-section" class="section" style="display: none;">
+                <div class="loading-card">
+                    <div class="spinner"></div>
+                    <h2>🔍 Analizando sorteo...</h2>
+                    <p>Extrayendo comentarios, verificando seguidores y likes...</p>
+                    <p><small>Esto puede tomar unos segundos ⏱️</small></p>
+                </div>
+            </section>
 
-    async function loadUserMedia() {
-      try {
-        const res = await fetch('/api/media'); // Updated endpoint
-        if (!res.ok) {
-          const errorText = await res.text();
-          mediaListDiv.innerHTML = `<p class="error-message">Error al cargar las publicaciones: ${errorText}. Intenta <a href="/login">reconectar con Instagram</a>.</p>`;
-          // Potentially logout or guide user if token is invalid
-          if (res.status === 401) { // Unauthorized
-            loginButton.style.display = 'block';
-            userInfoDiv.style.display = 'none';
-            logoutButton.style.display = 'none';
-            mediaSection.style.display = 'none'; // Hide media section as well
-             winnerSection.style.display = 'none';
-          } else {
-            mediaSection.style.display = 'block'; // Keep section visible for the error message
-          }
-          winnerSection.style.display = 'none';
-          return;
-        }
-        const json = await res.json();
-        mediaListDiv.innerHTML = ''; 
-        if (json.data && json.data.length > 0) {
-          json.data.forEach(post => {
-            const btn = document.createElement('button');
-            let postText = post.caption ? post.caption.substring(0, 70) + (post.caption.length > 70 ? '...' : '') : `Post ID: ${post.id}`;
-            
-            // Use thumbnail_url if available, otherwise media_url or a placeholder
-            let imageUrl = post.thumbnail_url || post.media_url;
-            if (post.media_type === 'VIDEO' && !post.thumbnail_url) {
-                // For videos, thumbnail_url is preferred. If not available, you might not have a direct image.
-                // media_url for VIDEO is the video file itself.
-                // Consider a generic video icon if no thumbnail.
-            }
+            <!-- Estado de Resultado -->
+            <section id="resultado-section" class="section" style="display: none;">
+                <div class="resultado-card">
+                    <!-- Ganador -->
+                    <div id="ganador-container" style="display: none;">
+                        <div class="ganador">
+                            <div class="ganador-avatar">🏆</div>
+                            <h3>¡Felicidades al ganador!</h3>
+                            <div class="ganador-nombre" id="ganador-username">@username</div>
+                            <div class="ganador-comentario" id="ganador-comentario">"Comentario del ganador"</div>
+                        </div>
+                    </div>
 
-            let icon = '';
-            if (post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM') {
-              icon = '🖼️ ';
-            } else if (post.media_type === 'VIDEO') {
-              icon = '📹 ';
-            }
-            
-            // Displaying the image thumbnail
-            let imagePreview = '';
-            if (imageUrl && (post.media_type === 'IMAGE' || post.media_type === 'CAROUSEL_ALBUM' || (post.media_type === 'VIDEO' && post.thumbnail_url))) {
-                imagePreview = `<img src="${imageUrl}" alt="thumbnail" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px; vertical-align: middle; border-radius: 4px;">`;
-            }
+                    <!-- Sin ganador -->
+                    <div id="no-ganador-container" style="display: none;">
+                        <div class="no-ganador">
+                            <div class="no-ganador-icon">😔</div>
+                            <h3>No hay ganador</h3>
+                            <p id="no-ganador-mensaje">No hay participantes que cumplan todos los requisitos.</p>
+                        </div>
+                    </div>
 
-            btn.innerHTML = `${imagePreview}${icon}${postText}`;
-            btn.title = post.caption || `Post ID: ${post.id}`;
-            btn.onclick = () => loadCommentsAndPickWinner(post.id);
-            mediaListDiv.appendChild(btn);
-          });
-        } else {
-          mediaListDiv.innerHTML = '<p>No se encontraron publicaciones recientes. ¡Asegúrate de tener posts en tu cuenta de Instagram Profesional!</p>';
-        }
-      } catch (error) {
-        console.error('Error al cargar posts:', error);
-        mediaListDiv.innerHTML = '<p class="error-message">Error crítico al cargar las publicaciones. Revisa la consola para más detalles.</p>';
-      }
-    }
+                    <!-- Estadísticas -->
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-number" id="stat-comentarios">0</span>
+                            <span class="stat-label">Comentarios</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="stat-participantes">0</span>
+                            <span class="stat-label">Participantes Válidos</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="stat-seguidores">0</span>
+                            <span class="stat-label">Seguidores</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="stat-likes">0</span>
+                            <span class="stat-label">Likes</span>
+                        </div>
+                    </div>
 
-    async function loadCommentsAndPickWinner(id) {
-      try {
-        winnerDisplayDiv.innerHTML = '<p>🔮 Seleccionando un ganador entre los comentarios... ¡Mucha suerte!</p>';
-        winnerSection.style.display = 'block';
-        mediaSection.style.display = 'none'; 
+                    <button id="nuevo-sorteo" class="btn-primary" style="margin-top: 30px;">
+                        🎲 Realizar Otro Sorteo
+                    </button>
+                </div>
+            </section>
 
-        const res = await fetch(`/api/comments/${id}`); // Updated endpoint
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Error del servidor: ${res.status} - ${errorText}`);
-        }
-        const json = await res.json();
-        
-        if (json.data && json.data.length > 0) {
-          // Filter out comments from the post owner if post.username is available and matches comment.username
-          // const postOwnerUsername = ''; // This would ideally come from the media item if available
-          // const filteredComments = json.data.filter(c => c.username !== postOwnerUsername);
-          // For now, we use all commenters.
-          const participantes = json.data.map(c => c.username);
-          const participantesUnicos = [...new Set(participantes)];
-          
-          if (participantesUnicos.length > 0) {
-            const ganador = participantesUnicos[Math.floor(Math.random() * participantesUnicos.length)];
-            winnerDisplayDiv.innerHTML = `<p>¡Felicidades! El ganador es:</p><strong>${ganador}</strong> 🎉<br><button onclick="resetSorteo()">Elegir otro post</button>`;
-          } else {
-            // This case might occur if all comments were from the post owner and filtered out.
-            winnerDisplayDiv.innerHTML = '<p>No hay comentarios válidos para el sorteo (ej. solo comentarios del autor).</p><br><button onclick="resetSorteo()">Elegir otro post</button>';
-          }
-        } else {
-          winnerDisplayDiv.innerHTML = '<p>Esta publicación no tiene comentarios aún. ¡Anima a tus seguidores a participar!</p><br><button onclick="resetSorteo()">Elegir otro post</button>';
-        }
-      } catch (error) {
-        console.error('Error al cargar comentarios o seleccionar ganador:', error);
-        winnerDisplayDiv.innerHTML = `<p class="error-message">Oops. Hubo un problema al obtener los comentarios: ${error.message}.</p><button onclick="resetSorteo()">Intentar con otro post</button>`;
-      }
-    }
+            <!-- Error -->
+            <div id="error-message" class="error-message" style="display: none;">
+                <strong>❌ Error:</strong> <span id="error-text"></span>
+            </div>
+        </main>
 
-    function resetSorteo() {
-      winnerSection.style.display = 'none';
-      mediaSection.style.display = 'block';
-      // Consider if loadUserMedia() should be called here to refresh the list
-      // loadUserMedia(); 
-    }
+        <footer>
+            <p>Instagram Sorteo App v2.0.0 - Sorteos justos y automáticos 🎯</p>
+        </footer>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', checkLoginStatus);
-  </script>
+    <script src="script.js"></script>
 </body>
 </html>
