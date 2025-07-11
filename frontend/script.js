@@ -1,3 +1,181 @@
+let lastParticipants = [];
+// --- Scraping desde el navegador ---
+document.addEventListener('DOMContentLoaded', () => {
+    const scrapeBtn = document.getElementById('scrape-comments-btn');
+    if (scrapeBtn) {
+        scrapeBtn.addEventListener('click', () => {
+            mostrarInstruccionesScraping();
+        });
+    }
+});
+
+function mostrarInstruccionesScraping() {
+    const instrucciones = `
+<h3>Scraping de comentarios</h3>
+<ol>
+<li>Abre el post de Instagram en otra pestaña y asegúrate de estar logueado.</li>
+<li>Abre la consola del navegador (F12 o Ctrl+Shift+J).</li>
+<li>Copia y pega el siguiente script en la consola y presiona Enter:</li>
+</ol>
+<pre style="background:#f4f4f4;padding:10px;font-size:0.95em;overflow-x:auto;">${getScrapingScript()}</pre>
+<ol start="4">
+<li>El script copiará los comentarios en formato <b>usuario: comentario</b> al portapapeles.</li>
+<li>Vuelve aquí y pégalos en el campo de comentarios para realizar el sorteo.</li>
+</ol>
+`;
+    mostrarResultadoSorteo(instrucciones);
+}
+
+function getScrapingScript() {
+    return `(() => {
+        async function extraerTodosLosComentarios() {
+            let comentarios = [];
+            let cargarMasBtn;
+            // Cargar todos los comentarios visibles
+            while ((cargarMasBtn = document.querySelector('button:contains("Ver más comentarios")')) || document.querySelector('button:contains("Cargar más comentarios")')) {
+                (cargarMasBtn || document.querySelector('button:contains("Cargar más comentarios")')).click();
+                await new Promise(r => setTimeout(r, 1200));
+            }
+            // Extraer comentarios
+            document.querySelectorAll('ul li div span a, ul li div span').forEach(el => {
+                const parent = el.closest('li');
+                if (parent) {
+                    const username = parent.querySelector('a')?.innerText;
+                    const comment = parent.querySelector('span:not([class])')?.innerText;
+                    if (username && comment) {
+                        comentarios.push(username + ': ' + comment);
+                    }
+                }
+            });
+            if (comentarios.length) {
+                const text = comentarios.join('\n');
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Comentarios copiados al portapapeles. Vuelve a la app y pégalos para el sorteo.');
+                });
+            } else {
+                alert('No se encontraron comentarios.');
+            }
+        }
+        extraerTodosLosComentarios();
+    })();`;
+}
+// --- Importación manual de comentarios ---
+document.addEventListener('DOMContentLoaded', () => {
+    const importBtn = document.getElementById('import-comments-btn');
+    const textarea = document.getElementById('comments-textarea');
+    const fileInput = document.getElementById('comments-file');
+
+    importBtn.addEventListener('click', () => {
+        let comments = [];
+        // Procesar texto pegado
+        if (textarea.value.trim()) {
+            comments = textarea.value.trim().split('\n').map(line => {
+                const parts = line.split(':');
+                return {
+                    username: (parts[0] || '').trim(),
+                    comment: (parts.slice(1).join(':') || '').trim()
+                };
+            }).filter(c => c.username && c.comment);
+        }
+        // Procesar archivo CSV/TXT
+        else if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                comments = text.split('\n').map(line => {
+                    const parts = line.split(':');
+                    return {
+                        username: (parts[0] || '').trim(),
+                        comment: (parts.slice(1).join(':') || '').trim()
+                    };
+                }).filter(c => c.username && c.comment);
+                realizarSorteoManual(comments);
+            };
+            reader.readAsText(file);
+            return;
+        }
+        realizarSorteoManual(comments);
+    });
+});
+
+function realizarSorteoManual(comments) {
+    if (!comments || comments.length === 0) {
+        alert('No se encontraron comentarios válidos.');
+        return;
+    }
+    fetch('/api/sorteo-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comentarios: comments })
+    })
+    .then(res => res.json())
+    .then(data => {
+        lastParticipants = data.participantes;
+        let resultado = '';
+        if (data.ganador) {
+            resultado = `🏆 Ganador: <b>${data.ganador.username}</b><br>Comentario: ${data.ganador.comment}`;
+        } else {
+            resultado = 'No hay participantes válidos.';
+        }
+        resultado += `<br><br>Participantes válidos: ${data.participantesValidos}<br>Total de comentarios: ${data.totalComentarios}`;
+        mostrarResultadoSorteo(resultado);
+    })
+    .catch(() => {
+        mostrarResultadoSorteo('Error al procesar el sorteo.');
+    });
+}
+
+function mostrarResultadoSorteo(html) {
+    // Ocultar todas las secciones excepto resultado
+    document.querySelectorAll('main > section').forEach(sec => sec.style.display = 'none');
+    const resultadoSection = document.getElementById('resultado-section');
+    resultadoSection.style.display = 'block';
+
+    // Mostrar ganador o no ganador
+    const ganadorContainer = document.getElementById('ganador-container');
+    const noGanadorContainer = document.getElementById('no-ganador-container');
+    const ganadorUsername = document.getElementById('ganador-username');
+    const ganadorComentario = document.getElementById('ganador-comentario');
+    const noGanadorMensaje = document.getElementById('no-ganador-mensaje');
+
+    // Extraer datos del html generado
+    const ganadorMatch = html.match(/Ganador: <b>(.*?)<\/b><br>Comentario: (.*?)(<br|$)/);
+    if (ganadorMatch) {
+        ganadorContainer.style.display = 'block';
+        noGanadorContainer.style.display = 'none';
+        ganadorUsername.textContent = '@' + ganadorMatch[1];
+        ganadorComentario.textContent = '"' + ganadorMatch[2] + '"';
+    } else {
+        ganadorContainer.style.display = 'none';
+        noGanadorContainer.style.display = 'block';
+        noGanadorMensaje.textContent = 'No hay participantes válidos.';
+    }
+
+    // Estadísticas
+    const statsMatch = html.match(/Participantes válidos: (\d+)<br>Total de comentarios: (\d+)/);
+    document.getElementById('stat-participantes').textContent = statsMatch ? statsMatch[1] : '0';
+    document.getElementById('stat-comentarios').textContent = statsMatch ? statsMatch[2] : '0';
+    document.getElementById('stat-seguidores').textContent = '0';
+    document.getElementById('stat-likes').textContent = '0';
+}
+// Función para exportar participantes a CSV
+function exportParticipants(participants) {
+    if (!participants || participants.length === 0) {
+        alert('No hay participantes para exportar.');
+        return;
+    }
+    const rows = participants.map(p => `${p.username},"${p.comment.replace(/"/g, '""')}"`);
+    const csvContent = 'username,comment\n' + rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'participantes.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 // Estado global de la aplicación
 let appState = {
   isLoggedIn: false,

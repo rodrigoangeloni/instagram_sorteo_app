@@ -16,6 +16,34 @@ app.use(session({
 }));
 
 app.use(express.json());
+
+// --- Endpoint para sorteo manual ---
+app.post('/api/sorteo-manual', (req, res) => {
+  const comentarios = req.body.comentarios;
+  if (!Array.isArray(comentarios) || comentarios.length === 0) {
+    return res.status(400).json({ error: 'No se recibieron comentarios válidos.' });
+  }
+  // Filtrar usuarios únicos
+  const usuariosUnicos = new Set();
+  const participantes = comentarios.filter(c => {
+    if (!c.username || !c.comment) return false;
+    if (usuariosUnicos.has(c.username)) return false;
+    usuariosUnicos.add(c.username);
+    return true;
+  });
+  // Seleccionar ganador aleatorio
+  let ganador = null;
+  if (participantes.length > 0) {
+    const indiceGanador = Math.floor(Math.random() * participantes.length);
+    ganador = participantes[indiceGanador];
+  }
+  res.json({
+    ganador,
+    participantesValidos: participantes.length,
+    totalComentarios: comentarios.length,
+    participantes
+  });
+});
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.get('/login', (req, res) => {

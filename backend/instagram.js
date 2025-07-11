@@ -12,8 +12,9 @@ const {
 const API_VERSION = GRAPH_API_VERSION || 'v19.0';
 
 function getLoginUrl() {
-  // Scopes ampliados para obtener likes y seguidores
-  const scopes = 'instagram_basic,pages_show_list,pages_read_engagement,instagram_manage_insights';
+  // Scopes básicos que funcionan con cualquier aplicación de Facebook
+  // Estos permiten acceso a páginas e Instagram Business básico
+  const scopes = 'pages_show_list,pages_read_engagement,instagram_basic';
   const url = `https://www.facebook.com/${API_VERSION}/dialog/oauth?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${REDIRECT_URI}&scope=${scopes}&response_type=code`;
   return url;
 }

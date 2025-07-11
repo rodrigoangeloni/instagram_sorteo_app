@@ -17,23 +17,20 @@
         </header>
 
         <main>
-            <!-- Estado de Login -->
-            <section id="login-section" class="section">
-                <div class="login-card">
-                    <h2>¡Bienvenido!</h2>
-                    <p>Conecta tu cuenta profesional de Instagram para comenzar a realizar sorteos automáticos.</p>
-                    <div style="margin: 30px 0;">
-                        <div style="font-size: 4rem; margin-bottom: 20px;">📱</div>
-                        <p><strong>Requisitos:</strong></p>
-                        <ul style="text-align: left; margin: 15px 0; padding-left: 20px;">
-                            <li>✅ Cuenta Profesional de Instagram (Empresa o Creador)</li>
-                            <li>🔗 Vinculada a una Página de Facebook</li>
-                            <li>👑 Permisos de administrador en la página</li>
-                        </ul>
+            <!-- Nueva sección: Importación manual de comentarios y scraping -->
+            <section id="manual-import-section" class="section">
+                <div class="import-card">
+                    <h2>Importar comentarios manualmente</h2>
+                    <p>Pega aquí los comentarios del post de Instagram (uno por línea, formato: <b>usuario: comentario</b>) o sube un archivo CSV/Excel.</p>
+                    <textarea id="comments-textarea" rows="10" style="width:100%;margin-bottom:10px;" placeholder="usuario1: comentario1\nusuario2: comentario2\n..."></textarea>
+                    <div style="margin-bottom:10px;">
+                        <input type="file" id="comments-file" accept=".csv,.xlsx,.xls,.txt">
                     </div>
-                    <a href="/login" class="btn-primary">
-                        📱 Conectar con Instagram
-                    </a>
+                    <button id="import-comments-btn" class="btn-primary">Procesar comentarios y realizar sorteo</button>
+                    <hr style="margin:30px 0;">
+                    <h2>Scraping automático desde Instagram</h2>
+                    <p>Abre el post de Instagram en otra pestaña y haz clic en el botón para extraer los comentarios automáticamente.</p>
+                    <button id="scrape-comments-btn" class="btn-secondary">🔍 Extraer comentarios del post abierto</button>
                 </div>
             </section>
 
@@ -139,6 +136,9 @@
 
                     <button id="nuevo-sorteo" class="btn-primary" style="margin-top: 30px;">
                         🎲 Realizar Otro Sorteo
+                    </button>
+                    <button id="export-participants" class="btn-secondary" style="margin-top: 10px; display: none;">
+                        📥 Exportar participantes (CSV)
                     </button>
                 </div>
             </section>
